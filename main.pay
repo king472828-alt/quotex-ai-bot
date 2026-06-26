@@ -1,0 +1,34 @@
+echo "import time
+from indicators import calculate_indicators
+from strategy import check_signal
+
+def main():
+    print('Bot Running... @king472828-alt')
+    while True:
+        try:
+            ema_fast = 55.5
+            ema_slow = 54.2
+            current_price = 56.0
+            rsi_value = 25.0
+            candle = 'green'
+            
+            signal = check_signal(ema_fast, ema_slow, current_price, rsi_value, candle)
+            
+            if signal == 'BUY':
+                print('🚨 AI SIGNAL: BUY Entry Found!')
+            elif signal == 'SELL':
+                print('🚨 AI SIGNAL: SELL Entry Found!')
+            else:
+                print('🔄 Scanning Market... No Signal Yet.')
+                
+            time.sleep(60)
+            
+        except KeyboardInterrupt:
+            print('\n🛑 Bot stopped by user.')
+            break
+        except Exception as e:
+            print(f'❌ Error occurred: {e}')
+            time.sleep(10)
+
+if __name__ == '__main__':
+    main()" > main.py
