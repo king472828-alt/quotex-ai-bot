@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GORIBTRADER - Auto Config V2</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #151924;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .top-bar {
+            background-color: #1c2030;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2e43;
+        }
+        .pair-name { font-size: 16px; font-weight: bold; color: #ffffff; }
+        .payout { color: #00e676; font-size: 13px; font-weight: bold; }
+        .balance-box { background: #2a2e43; padding: 4px 10px; border-radius: 4px; font-size: 14px; font-weight: bold; color: #ffca28; }
+        
+        .chart-area {
+            flex: 1;
+            position: relative;
+            background-color: #131722;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid #2a2e43;
+        }
+        
+        .ai-logo-container {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1e222d 40%, #0d1117 100%);
+            border: 3px solid #536dfe;
+            box-shadow: 0 0 20px rgba(83, 109, 254, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .ai-icon { font-size: 45px; margin-bottom: 5px; }
+        .brand-name { font-size: 11px; font-weight: bold; color: #ffd700; letter-spacing: 1px; }
+
+        .scanner-status { font-size: 11px; letter-spacing: 1px; color: #00b0ff; text-transform: uppercase; font-weight: bold; }
+        .live-price { font-size: 38px; font-weight: 700; color: #ffffff; margin: 5px 0; }
+        .indicators-status { font-size: 11px; color: #787b86; font-family: monospace; text-align: center; }
+        
+        .control-panel { background-color: #1c2030; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+        .panel-row { display: flex; gap: 10px; }
+        .input-box {
+            flex: 1;
+            background-color: #2a2e43;
+            border: 1px solid #363c5a;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+        }
+        .input-label { font-size: 10px; color: #787b86; text-transform: uppercase; margin-bottom: 2px; }
+        .input-value { font-size: 14px; font-weight: bold; color: #ffffff; }
+        
+        .amount-input {
+            width: 70%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #536dfe;
+            color: #ffffff;
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            outline: none;
+            padding: 2px 0;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            border: none;
+            transition: all 0.2s ease;
+            opacity: 0.6;
+        }
+        .btn-up { background-color: #00e676; color: #0d1117; }
+        .btn-down { background-color: #ff5252; color: #ffffff; }
+        
+        .btn-up.active-trigger { background-color: #00b050; transform: scale(0.96); box-shadow: 0 0 15px #00e676; opacity: 1; }
+        .btn-down.active-trigger { background-color: #c62828; transform: scale(0.96); box-shadow: 0 0 15px #ff5252; opacity: 1; }
+
+        .bot-log { background-color: #0d1117; padding: 6px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #787b86; text-align: center; min-height: 16px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="pair-name">🎰 NZD/CAD <span class="payout">95%</span></div>
+        <div class="balance-box" id="balance-display">DEMO: $1,000.00</div>
+    </div>
+
+    <div class="chart-area">
+        <div class="ai-logo-container">
+            <div class="ai-icon">🤖</div>
+            <div class="brand-name">GORIBTRADER AI</div>
+        </div>
+
+        <div class="scanner-status" id="bot-status">Scanning 5S Chart...</div>
+        <div class="live-price" id="price-ticker">0.81298</div>
+        <div id="metrics-debug" class="indicators-status">Calculating Setup Data...</div>
+    </div>
+
+    <div class="control-panel">
+        <div class="panel-row">
+            <div class="input-box">
+                <div class="input-label">Timer</div>
+                <div class="input-value">00:00:05</div>
+            </div>
+            <div class="input-box">
+                <div class="input-label">Investment ($)</div>
+                <input type="number" class="amount-input" id="trade-amount-input" value="10" min="1">
+            </div>
+        </div>
+
+        <div class="bot-log" id="log-text">Fully Autonomous Mode Active. Waiting for Signals.</div>
+
+        <div class="panel-row" style="margin-top: 5px;">
+            <button class="btn btn-up" id="btn-up" disabled>Up ↑</button>
+            <button class="btn btn-down" id="btn-down" disabled>Down ↓</button>
+        </div>
+    </div>
+
+    <script>
+        const EMA_FAST_PERIOD = 9;
+        const EMA_SLOW_PERIOD = 21;
+        const TIME_INTERVAL = 5000; 
+
+        const priceTicker = document.getElementById('price-ticker');
+        const metricsDebug = document.getElementById('metrics-debug');
+        const botStatus = document.getElementById('bot-status');
+        const logText = document.getElementById('log-text');
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+        const balanceDisplay = document.getElementById('balance-display');
+        const tradeAmountInput = document.getElementById('trade-amount-input');
+
+        let demoBalance = 1000.00;
+        const payoutRate = 0.95; 
+
+        let priceHistory = Array.from({length: 30}, () => 0.81300 + (Math.random() * 0.00020));
+
+        function calculateEMA(data, period) {
+            let k = 2 / (period + 1);
+            let ema = data[0];
+            for (let i = 1; i < data.length; i++) {
+                ema = (data[i] * k) + (ema * (1 - k));
+            }
+            return ema;
+        }
+
+        function calculateRSI(data, period = 14) {
+            let gains = 0, losses = 0;
+            for (let i = data.length - period; i < data.length; i++) {
+                let diff = data[i] - data[i - 1];
+                if (diff > 0) gains += diff;
+                else losses -= diff;
+            }
+            if (losses === 0) return 100;
+            let rs = (gains / period) / (losses / period);
+            return 100 - (100 / (1 + rs));
+        }
+
+        function executeAutoTrade(direction) {
+            let currentTradeAmount = parseFloat(tradeAmountInput.value) || 10;
+            
+            if (currentTradeAmount > demoBalance) {
+                logText.innerText = "❌ Insufficient Balance for Auto Trade!";
+                logText.style.color = "#ff5252";
+                return;
+            }
+
+            demoBalance -= currentTradeAmount; 
+            balanceDisplay.innerText = `DEMO: $${demoBalance.toFixed(2)}`;
+            logText.innerText = `🤖 Auto Trade: Executed $${currentTradeAmount} ${direction.toUpperCase()} trade.`;
+            logText.style.color = "#ffffff";
+
+            setTimeout(() => {
+                let win = Math.random() > 0.45; 
+                if (win) {
+                    let winAmount = currentTradeAmount * (1 + payoutRate);
+                    demoBalance += winAmount;
+                    logText.innerText = `✅ [PROFIT]: $${currentTradeAmount} ${direction.toUpperCase()} Auto Win! +$${(currentTradeAmount * payoutRate).toFixed(2)}`;
+                    logText.style.color = "#00e676";
+                } else {
+                    logText.innerText = `❌ [LOSS]: $${currentTradeAmount} ${direction.toUpperCase()} Auto Loss! -$${currentTradeAmount.toFixed(2)}`;
+                    logText.style.color = "#ff5252";
+                }
+                balanceDisplay.innerText = `DEMO: $${demoBalance.toFixed(2)}`;
+            }, 4000); 
+        }
+
+        setInterval(() => {
+            let currentPrice = 0.81200 + (Math.random() * 0.00150);
+            priceHistory.push(currentPrice);
+            priceHistory.shift();
+
+            priceTicker.innerText = currentPrice.toFixed(5);
+
+            let ema9 = calculateEMA(priceHistory, EMA_FAST_PERIOD);
+            let ema21 = calculateEMA(priceHistory, EMA_SLOW_PERIOD);
+            let rsi14 = calculateRSI(priceHistory, 14);
+
+            let emaGap = (Math.abs(ema9 - ema21) / currentPrice * 100).toFixed(4);
+
+            metricsDebug.innerHTML = `EMA(9): ${ema9.toFixed(5)} | EMA(21): ${ema21.toFixed(5)}<br>EMA Gap: ${emaGap}% | RSI(14): ${rsi14.toFixed(2)}`;
+
+            btnUp.classList.remove('active-trigger');
+            btnDown.classList.remove('active-trigger');
+            botStatus.innerText = "Scanning 5S Chart...";
+            botStatus.style.color = "#00b0ff";
+
+            if (parseFloat(emaGap) < 0.015) {
+                if (rsi14 <= 30) {
+                    botStatus.innerText = "🚨 AUTO BUY SIGNAL!";
+                    botStatus.style.color = "#00e676";
+                    btnUp.classList.add('active-trigger');
+                    executeAutoTrade('up');
+                } else if (rsi14 >= 70) {
+                    botStatus.innerText = "🚨 AUTO SELL SIGNAL!";
