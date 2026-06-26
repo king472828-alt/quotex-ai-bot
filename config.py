@@ -1,1 +1,3 @@
-
+EMA_FAST = 9
+EMA_SLOW = 21
+TIMEFRAME = "5s"
