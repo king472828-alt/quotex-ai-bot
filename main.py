@@ -1,4 +1,3 @@
-
 import time
 from indicators import calculate_indicators
 from strategy import check_signal
@@ -35,3 +34,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
